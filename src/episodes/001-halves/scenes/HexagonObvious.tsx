@@ -4,46 +4,37 @@ import {
   useVideoConfig,
   spring,
   interpolate,
-  Easing,
 } from "remotion";
 import { SlicedShape } from "../../../shared/components/SlicedShape";
 import { COLORS } from "../../../shared/utils/colors";
 
-// The 4 adjacent pairs — these look like "obvious" halves
+// Consecutive triplets — the "obvious" halves of a hexagon
+// These are 3 slices that sit next to each other
 const OBVIOUS: number[][] = [
-  [0, 1],
-  [1, 2],
-  [2, 3],
-  [3, 0],
+  [0, 1, 2],
+  [1, 2, 3],
+  [2, 3, 4],
+  [3, 4, 5],
+  [0, 4, 5], // wraps: slices 4, 5, 0
+  [0, 1, 5], // wraps: slices 5, 0, 1
 ];
 
-// How long each combo is shown (frames)
-const SHOW_DURATION = 90; // 3 seconds each
+const SHOW_DURATION = 75; // 2.5 seconds each
+const COMBO_START = 60;
 
-export const ObviousHalves: React.FC = () => {
+export const HexagonObvious: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  // Circle draws in (0-40)
-  const outlineProgress = interpolate(frame, [0, 40], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.inOut(Easing.quad),
-  });
-
-  // Scale entrance
+  // Hexagon springs in
   const scale = spring({ frame, fps, config: { damping: 200 } });
 
-  // Dividers fade in (40-60)
-  const dividerOpacity = interpolate(frame, [40, 60], [0, 1], {
+  // Dividers fade in after shape appears
+  const dividerOpacity = interpolate(frame, [30, 50], [0, 1], {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
 
-  // Combos start at frame 90 (after circle is fully drawn + a pause)
-  const COMBO_START = 90;
-
-  // Work out which combo to show
   let shadedSlices: number[] = [];
   let fillOpacity = 0;
 
@@ -56,15 +47,12 @@ export const ObviousHalves: React.FC = () => {
     const frameInCombo = comboFrame % SHOW_DURATION;
 
     shadedSlices = OBVIOUS[comboIndex];
-
-    // On the last combo, fade in once then hold forever
     const isLastCombo = comboIndex === OBVIOUS.length - 1;
     const pastFirstBlock = comboFrame >= (comboIndex + 1) * SHOW_DURATION;
 
     if (isLastCombo && pastFirstBlock) {
       fillOpacity = 1;
     } else {
-      // Fade in over 20 frames, hold, fade out over 20 frames
       const fadeIn = interpolate(frameInCombo, [0, 20], [0, 1], {
         extrapolateRight: "clamp",
       });
@@ -74,7 +62,6 @@ export const ObviousHalves: React.FC = () => {
         [1, 0],
         { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
       );
-
       fillOpacity = isLastCombo ? fadeIn : Math.min(fadeIn, fadeOut);
     }
   }
@@ -84,16 +71,15 @@ export const ObviousHalves: React.FC = () => {
       <AbsoluteFill className="flex items-center justify-center">
         <div style={{ transform: `scale(${scale})` }}>
           <SlicedShape
-            type="circle"
-            sliceCount={4}
+            type="polygon"
+            sliceCount={6}
             shadedSlices={shadedSlices}
             size={400}
             fillColor={COLORS.fill}
             fillOpacity={fillOpacity}
             strokeColor={COLORS.outline}
-            showDividers={frame >= 40}
+            showDividers={frame >= 30}
             dividerOpacity={dividerOpacity}
-            outlineProgress={outlineProgress}
           />
         </div>
       </AbsoluteFill>

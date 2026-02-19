@@ -5,3 +5,13 @@ dist
 
 # Ignore the output video from Git but not videos you import into src/.
 out
+
+# Raw recordings — working copies before they go into /public
+_audio/
+
+# Large media assets in /public — keep the folder, ignore the files
+public/*.mp3
+public/*.m4a
+public/*.wav
+public/*.mp4
+public/*.mov
