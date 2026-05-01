@@ -6,6 +6,7 @@ const LINE = "#E6F1FF";
 const AMBER = "#FBBF24";
 const GREEN = "#34D399";
 const GREY = "#9CA3AF";
+const PHOSPHOR = "#50FA7B";
 
 const rangeMin = -10;
 const rangeMax = 10;
@@ -19,21 +20,21 @@ export const NumberLinePulse: React.FC = () => {
 	const frame = useCurrentFrame();
 	const { width, height, fps } = useVideoConfig();
 
-	// Line draws in over 2s with ease-in-out
-	const lineX2 = interpolate(frame, [0, fps * 2], [80, width - 80], {
+	// Line draws in 90→150 (after the "load number_line" command finishes typing)
+	const lineX2 = interpolate(frame, [90, 150], [80, width - 80], {
 		extrapolateLeft: "clamp",
 		extrapolateRight: "clamp",
 		easing: Easing.bezier(0.85, 0, 0.15, 1),
 	});
 
-	// 10-frame fade-up on the line
-	const lineOpacity = interpolate(frame, [0, 10], [0, 1], {
+	// Line opacity ramps up alongside the line draw
+	const lineOpacity = interpolate(frame, [90, 100], [0, 1], {
 		extrapolateLeft: "clamp",
 		extrapolateRight: "clamp",
 	});
 
-	// Glow fades up starting at frame 114
-	const glowOpacity = interpolate(frame, [114, 124], [0, 1], {
+	// Glow fades up at frame 210 — the same moment "number_line loaded successfully" prints
+	const glowOpacity = interpolate(frame, [210, 220], [0, 1], {
 		extrapolateLeft: "clamp",
 		extrapolateRight: "clamp",
 	});
@@ -41,9 +42,55 @@ export const NumberLinePulse: React.FC = () => {
 	// Smooth sine pulse — one full cycle every 60 frames (2s at 30fps)
 	const pulse = (Math.sin((frame / 60) * Math.PI * 2) + 1) / 2;
 
-	const cy = height / 2;
+	const cy = height * 0.72;
 	const zeroX = mapX(0, width);
 	const targetX = mapX(-7, width);
+
+	// Retro terminal layout (top half, centered)
+	const termW = width * 0.62;
+	const termH = height * 0.34;
+	const termX = (width - termW) / 2;
+	const termY = height * 0.13;
+	// Terminal animates in: fade + slight scale-up over the first second
+	const termOpacity = interpolate(frame, [0, 30], [0, 1], {
+		extrapolateLeft: "clamp",
+		extrapolateRight: "clamp",
+	});
+	const termScale = interpolate(frame, [0, 30], [0.94, 1], {
+		extrapolateLeft: "clamp",
+		extrapolateRight: "clamp",
+		easing: Easing.out(Easing.cubic),
+	});
+	// Blinking cursor (every ~0.5s)
+	const cursorOn = Math.floor(frame / 15) % 2 === 0;
+
+	// Terminal sequence — series0 ep1 (v0.0.1). Total runtime: 15s (450 frames).
+	// Each row appears at `start`. Rows with `typed` reveal characters one by
+	// one between `from` and `to` (after the `prefix` is shown instantly).
+	const PROMPT = "motiomatrix@v.0.0.1 ~ %";
+	const termRows: Array<{
+		start: number;
+		prefix: string;
+		typed?: { text: string; from: number; to: number };
+		dim?: boolean;
+	}> = [
+		// 1) Prompt + typed "load" command. Prompt visible from frame 0; typing 30→90.
+		{
+			start: 0,
+			prefix: `${PROMPT} `,
+			typed: { text: "load number_line range(-10..10)", from: 30, to: 90 },
+		},
+		// 2) System output — fires when the glow appears at 0.
+		{ start: 210, prefix: "number_line loaded successfully", dim: true },
+		// 3) Prompt + typed "seek -7" command.
+		{
+			start: 240,
+			prefix: `${PROMPT} `,
+			typed: { text: "seek -7", from: 270, to: 300 },
+		},
+		// 4) System output — fires when the glow arrives at -7 (turns green).
+		{ start: 345, prefix: "target found: -7", dim: true },
+	];
 
 	// Glow travels from 0 → -6 starting at 10s, over 1.5s with ease
 	const travelStart = fps * 10;
@@ -108,8 +155,62 @@ export const NumberLinePulse: React.FC = () => {
 					>
 						<path d="M0,0 L8,4 L0,8 Z" fill={GREY} />
 					</marker>
+
+					{/* Horizontal scanlines for the CRT terminal */}
+					<pattern
+						id="scanlines"
+						width="4"
+						height="4"
+						patternUnits="userSpaceOnUse"
+					>
+						<rect width="4" height="4" fill="transparent" />
+						<line
+							x1="0"
+							y1="0"
+							x2="4"
+							y2="0"
+							stroke="#000"
+							strokeOpacity="0.35"
+							strokeWidth="1"
+						/>
+					</pattern>
+
+					{/* Gradient mask: terminal fades from solid (top) to transparent (bottom) */}
+					<linearGradient id="termGrad" x1="0" y1="0" x2="0" y2="1">
+						<stop offset="0%" stopColor="white" stopOpacity="1" />
+						<stop offset="65%" stopColor="white" stopOpacity="1" />
+						<stop offset="100%" stopColor="white" stopOpacity="0" />
+					</linearGradient>
+					<mask id="termFadeMask" maskUnits="userSpaceOnUse">
+						<rect
+							x={termX - 20}
+							y={termY - 20}
+							width={termW + 40}
+							height={termH + 40}
+							fill="url(#termGrad)"
+						/>
+					</mask>
+
+					{/* Gradient mask: number-line section fades in from the top edge */}
+					<linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+						<stop offset="0%" stopColor="white" stopOpacity="0" />
+						<stop offset="22%" stopColor="white" stopOpacity="1" />
+						<stop offset="100%" stopColor="white" stopOpacity="1" />
+					</linearGradient>
+					<mask id="lineFadeMask" maskUnits="userSpaceOnUse">
+						<rect
+							x="0"
+							y={height * 0.5}
+							width={width}
+							height={height * 0.5}
+							fill="url(#lineGrad)"
+						/>
+					</mask>
 				</defs>
 
+				{/* Number-line section (bottom half) — wrapped in a top-edge fade mask
+				    so the section softly emerges into the terminal area above. */}
+				<g mask="url(#lineFadeMask)">
 				{/* Main line with arrowhead */}
 				<line
 					x1={80}
@@ -137,8 +238,8 @@ export const NumberLinePulse: React.FC = () => {
 					// --- Staggered fade-in -------------------------------------------------
 					// Total number of ticks to spread across the stagger window.
 					const totalTicks = rangeMax - rangeMin + 1;
-					// Begin fading ticks the moment the line finishes drawing (frame 60 @ 30fps).
-					const ticksStart = fps * 2;
+					// Begin fading ticks the moment the line finishes drawing (frame 150).
+					const ticksStart = 150;
 					// Spread the staggered starts across a 2-second window.
 					const ticksDuration = fps * 2;
 					// Each tick's individual start frame: i=0 fires at ticksStart, the last tick
@@ -279,41 +380,104 @@ export const NumberLinePulse: React.FC = () => {
 					/>
 					<circle cx={glowX} cy={cy} r={13} fill={glowFill} />
 				</g>
+				</g>
 
-				{/* "go to -7" — top left, per-character fade-in over 1s starting at frame 150 */}
-				{(() => {
-					const text = "Find -7 on the number line";
-					const start = 150;
-					const totalDuration = fps; // 1 second
-					const charFade = 12; // frames each character takes to fade in
-					// Stagger across the remaining window so the last char still fully fades in.
-					const stagger = (totalDuration - charFade) / (text.length - 1);
-					return (
-						<text
-							x={180}
-							y={190}
-							textAnchor="start"
-							fill={LINE}
-							fontSize={60}
-							fontWeight={600}
-						>
-							{text.split("").map((char, i) => {
-								const charStart = start + i * stagger;
-								const charOpacity = interpolate(
-									frame,
-									[charStart, charStart + charFade],
-									[0, 1],
-									{ extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+				{/* Retro CRT terminal — top half, centered. Animates in with fade + scale,
+				    then blends downward via gradient mask into the BG. */}
+				<g
+					mask="url(#termFadeMask)"
+					opacity={termOpacity}
+					transform={`translate(${termX + termW / 2} ${termY + termH / 2}) scale(${termScale}) translate(${-(termX + termW / 2)} ${-(termY + termH / 2)})`}
+				>
+					{/* Bezel / outer frame */}
+					<rect
+						x={termX - 8}
+						y={termY - 8}
+						width={termW + 16}
+						height={termH + 16}
+						rx={18}
+						fill="#0c0f1a"
+						stroke={PHOSPHOR}
+						strokeOpacity={0.25}
+						strokeWidth={2}
+					/>
+					{/* Screen interior */}
+					<rect
+						x={termX}
+						y={termY}
+						width={termW}
+						height={termH}
+						rx={10}
+						fill="#040a08"
+					/>
+					{/* Phosphor glow vignette */}
+					<rect
+						x={termX}
+						y={termY}
+						width={termW}
+						height={termH}
+						rx={10}
+						fill={PHOSPHOR}
+						opacity={0.04}
+					/>
+					{/* Terminal text content — driven by termRows schedule. */}
+					<g
+						style={{
+							fontFamily:
+								"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+						}}
+					>
+						{termRows.map((row, idx) => {
+							if (frame < row.start) return null;
+
+							// Reveal typed text character by character.
+							let typedSubstring = "";
+							if (row.typed && frame >= row.typed.from) {
+								const dur = row.typed.to - row.typed.from;
+								const progress = Math.min(
+									1,
+									Math.max(0, (frame - row.typed.from) / dur),
 								);
-								return (
-									<tspan key={i} opacity={charOpacity}>
-										{char}
-									</tspan>
+								typedSubstring = row.typed.text.slice(
+									0,
+									Math.floor(progress * row.typed.text.length),
 								);
-							})}
-						</text>
-					);
-				})()}
+							}
+
+							// Cursor sits on the latest visible row, blinking.
+							const nextRow = termRows[idx + 1];
+							const isCurrent = !nextRow || frame < nextRow.start;
+							const showCursor = isCurrent && cursorOn;
+
+							const lineY = termY + 50 + idx * 42;
+							return (
+								<text
+									key={idx}
+									x={termX + 28}
+									y={lineY}
+									fill={PHOSPHOR}
+									fontSize={24}
+									opacity={row.dim ? 0.7 : 0.95}
+									xmlSpace="preserve"
+								>
+									<tspan>{row.prefix}</tspan>
+									<tspan>{typedSubstring}</tspan>
+									{showCursor ? <tspan>█</tspan> : null}
+								</text>
+							);
+						})}
+					</g>
+					{/* Scanline overlay */}
+					<rect
+						x={termX}
+						y={termY}
+						width={termW}
+						height={termH}
+						rx={10}
+						fill="url(#scanlines)"
+					/>
+				</g>
+
 			</svg>
 		</AbsoluteFill>
 	);

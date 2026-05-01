@@ -40,7 +40,7 @@ export const RemotionRoot: React.FC = () => {
         <Composition
           id="002-number-line-pulse"
           component={NumberLinePulse}
-          durationInFrames={600}
+          durationInFrames={450}
           fps={30}
           width={1920}
           height={1080}
