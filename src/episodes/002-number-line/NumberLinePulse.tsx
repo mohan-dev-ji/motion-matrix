@@ -102,7 +102,7 @@ export const NumberLinePulse: React.FC = () => {
 						id="arrow-grey"
 						markerWidth="8"
 						markerHeight="8"
-						refX="6"
+						refX="8"
 						refY="4"
 						orient="auto"
 					>
@@ -221,7 +221,7 @@ export const NumberLinePulse: React.FC = () => {
 							x2={zeroX}
 							y2={arrowY + 6}
 							stroke={GREY}
-							strokeWidth={2}
+							strokeWidth={4}
 						/>
 						<line
 							x1={zeroX}
@@ -229,7 +229,7 @@ export const NumberLinePulse: React.FC = () => {
 							x2={arrowTipX}
 							y2={arrowY}
 							stroke={GREY}
-							strokeWidth={2}
+							strokeWidth={4}
 							markerEnd="url(#arrow-grey)"
 							opacity={interpolate(
 								zeroX - arrowTipX,
