@@ -2,16 +2,24 @@ import React from "react";
 import { Easing, interpolate, useCurrentFrame } from "remotion";
 import { useNumberLine } from "./NumberLine";
 
+export type GlowDotPathPoint = { frame: number; value: number };
+
 export type GlowDotProps = {
-	from: number;
-	to: number;
+	// Simple two-point travel — provide all four:
+	from?: number;
+	to?: number;
+	travelStartFrame?: number;
+	travelDuration?: number;
+	// OR multi-waypoint path (overrides the simple props when present):
+	path?: GlowDotPathPoint[];
+	// Common:
 	appearFrame: number;
 	appearDuration?: number;
-	travelStartFrame: number;
-	travelDuration: number;
 	restingColor: string;
 	arrivedColor: string;
 };
+
+const TRAVEL_EASING = Easing.bezier(0.5, 0, 0.15, 1);
 
 export const GlowDot: React.FC<GlowDotProps> = ({
 	from,
@@ -20,6 +28,7 @@ export const GlowDot: React.FC<GlowDotProps> = ({
 	appearDuration = 10,
 	travelStartFrame,
 	travelDuration,
+	path,
 	restingColor,
 	arrivedColor,
 }) => {
@@ -34,18 +43,45 @@ export const GlowDot: React.FC<GlowDotProps> = ({
 	);
 	const pulse = (Math.sin((frame / 60) * Math.PI * 2) + 1) / 2;
 
-	const glowX = interpolate(
-		frame,
-		[travelStartFrame, travelStartFrame + travelDuration],
-		[mapX(from), mapX(to)],
-		{
-			extrapolateLeft: "clamp",
-			extrapolateRight: "clamp",
-			easing: Easing.bezier(0.5, 0, 0.15, 1),
-		},
-	);
-	const glowFill =
-		frame >= travelStartFrame + travelDuration ? arrivedColor : restingColor;
+	let glowX: number;
+	let arrived: boolean;
+
+	if (path && path.length >= 2) {
+		glowX = interpolate(
+			frame,
+			path.map((p) => p.frame),
+			path.map((p) => mapX(p.value)),
+			{
+				extrapolateLeft: "clamp",
+				extrapolateRight: "clamp",
+				easing: TRAVEL_EASING,
+			},
+		);
+		arrived = frame >= path[path.length - 1].frame;
+	} else if (
+		from !== undefined &&
+		to !== undefined &&
+		travelStartFrame !== undefined &&
+		travelDuration !== undefined
+	) {
+		glowX = interpolate(
+			frame,
+			[travelStartFrame, travelStartFrame + travelDuration],
+			[mapX(from), mapX(to)],
+			{
+				extrapolateLeft: "clamp",
+				extrapolateRight: "clamp",
+				easing: TRAVEL_EASING,
+			},
+		);
+		arrived = frame >= travelStartFrame + travelDuration;
+	} else {
+		throw new Error(
+			"GlowDot: provide either `path` (>=2 points) or all of `from`/`to`/`travelStartFrame`/`travelDuration`",
+		);
+	}
+
+	const glowFill = arrived ? arrivedColor : restingColor;
 
 	return (
 		<g opacity={glowOpacity}>

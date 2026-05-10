@@ -13,6 +13,8 @@ export type UnderlineArrowProps = {
 	arrowGrowFromFrame: number;
 	arrowGrowDuration: number;
 	label: string;
+	showDashedDrop?: boolean;
+	showSolidDrop?: boolean;
 };
 
 export const UnderlineArrow: React.FC<UnderlineArrowProps> = ({
@@ -25,6 +27,8 @@ export const UnderlineArrow: React.FC<UnderlineArrowProps> = ({
 	arrowGrowFromFrame,
 	arrowGrowDuration,
 	label,
+	showDashedDrop = true,
+	showSolidDrop = true,
 }) => {
 	const frame = useCurrentFrame();
 	const { mapX, cy } = useNumberLine();
@@ -60,27 +64,31 @@ export const UnderlineArrow: React.FC<UnderlineArrowProps> = ({
 
 	return (
 		<>
-			<g opacity={dashedDropOpacity}>
-				<line
-					x1={fromX}
-					y1={dropTop}
-					x2={fromX}
-					y2={arrowY}
-					stroke={theme.color.grey}
-					strokeWidth={4}
-					strokeDasharray="6 6"
-				/>
-			</g>
-			<g opacity={solidDropOpacity}>
-				<line
-					x1={toX}
-					y1={dropTop}
-					x2={toX}
-					y2={arrowY}
-					stroke={theme.color.grey}
-					strokeWidth={4}
-				/>
-			</g>
+			{showDashedDrop && (
+				<g opacity={dashedDropOpacity}>
+					<line
+						x1={fromX}
+						y1={dropTop}
+						x2={fromX}
+						y2={arrowY}
+						stroke={theme.color.grey}
+						strokeWidth={4}
+						strokeDasharray="6 6"
+					/>
+				</g>
+			)}
+			{showSolidDrop && (
+				<g opacity={solidDropOpacity}>
+					<line
+						x1={toX}
+						y1={dropTop}
+						x2={toX}
+						y2={arrowY}
+						stroke={theme.color.grey}
+						strokeWidth={4}
+					/>
+				</g>
+			)}
 			{frame >= arrowGrowFromFrame && (
 				<g>
 					<line

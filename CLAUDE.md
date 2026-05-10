@@ -27,24 +27,26 @@ Reference implementation: composition `s0e0-f01-v001-seek-minus7` ([src](src/epi
 ## Versioning convention
 
 - **Series** — a thematic arc. `s0` = number-line foundations.
-- **Episode** — a ~2-minute YouTube video composed of 9 functions (~135s of animation + audio).
-- **Function** — one ~15s composition demonstrating one mathematical idea.
-- **Variation** — each function has 3 variations to vary example values without changing visual structure.
+- **Episode** — one operation type, demonstrated 9 times (~3 minutes of animation). Each episode focuses on a single function (e.g. seeking a target, two-number addition, three-number addition).
+- **Version** — one ~15–30s composition. An episode has 9 versions: 3 variations on each of 3 number-line ranges (-10..10, -20..20, -50..50).
 
-Numbering is **flat** across the 27 clips that make up an episode:
+Numbering is **flat** across the 9 versions in an episode:
 
 ```
-v0.0.1 ┐
-v0.0.2 ├─ function 1's three variations
-v0.0.3 ┘
-v0.0.4 ┐
-v0.0.5 ├─ function 2's three variations
-v0.0.6 ┘
-...
+v0.E.1 ┐
+v0.E.2 ├─ -10..10 (three variations)
+v0.E.3 ┘
+v0.E.4 ┐
+v0.E.5 ├─ -20..20 (three variations)
+v0.E.6 ┘
+v0.E.7 ┐
+v0.E.8 ├─ -50..50 (three variations)
+v0.E.9 ┘
 ```
 
-- File naming: `s{S}e{E}-{slug}/F{FF}-{slug}/v{S}.{E}.{F}-{slug}.tsx`
-- Composition id: `s{S}e{E}-f{FF}-v{VVV}-{slug}`
+- File naming: `s{S}e{E}-{slug}/v{S}.{E}.{V}-{slug}.tsx`
+- Composition id for a version: `s{S}e{E}-v{VVV}-{slug}`
+- Composition id for the full episode: `s{S}e{E}-episode`
 - The version string also appears in-frame in the terminal prompt: `motiomatrix@v.{S}.{E}.{V} ~ %`
 
 ## Project layout
@@ -61,12 +63,21 @@ src/
 │       ├── GlowDot.tsx            # pulsing traveller dot (renders inside <NumberLine>)
 │       └── UnderlineArrow.tsx    # dashed/solid drops + labelled arrow (renders inside <NumberLine>)
 └── episodes/
-    └── s0e0-number-line/
-        ├── episode.tsx              # exporter comp: stitches all functions via <Series>
-        └── F01-seek-target/
-            ├── v0.0.1-seek-minus7.tsx   # range -10..10, target -7
-            ├── v0.0.2-seek-9.tsx        # range -20..20, target 9
-            └── v0.0.3-seek-minus18.tsx  # range -50..50, target -18
+    ├── s0e0-seek-target/         # episode 0: find a value on the line
+    │   ├── episode.tsx
+    │   ├── v0.0.1-seek-minus7.tsx     # range -10..10
+    │   ├── v0.0.4-seek-9.tsx          # range -20..20
+    │   └── v0.0.7-seek-minus18.tsx    # range -50..50
+    ├── s0e1-addition/            # episode 1: add two signed numbers
+    │   ├── episode.tsx
+    │   ├── v0.1.1-add-minus3-plus8.tsx
+    │   ├── v0.1.4-add-12-minus19.tsx
+    │   └── v0.1.7-add-minus18-minus26.tsx
+    └── s0e2-triple-add/          # episode 2: add three signed numbers
+        ├── episode.tsx
+        ├── v0.2.1-triple-3-minus7-plus6.tsx
+        ├── v0.2.4-triple-minus7-plus16-minus12.tsx
+        └── v0.2.7-triple-minus22-plus38-minus29.tsx
 
 docs/
 ├── 1-inbox/                       # raw incoming material (screenshots, ideas, links)
@@ -92,7 +103,7 @@ Children of `<NumberLine>` consume `useNumberLine()` to read `mapX` (value→pix
 
 ## Episode exporter comp
 
-`episodes/s{S}e{E}-{slug}/episode.tsx` stitches all of an episode's function compositions end-to-end using Remotion's `<Series>`. This is the comp you render to ship the full episode as one MP4 (audio is laid down in post against this). The composition id is `s{S}e{E}-episode`. As new functions land, just import them and append to the `clips` array — duration auto-grows. Each clip plays its own 450-frame timeline starting from frame 0 inside the episode.
+Each `episodes/s{S}e{E}-{slug}/episode.tsx` stitches its episode's versions end-to-end with Remotion's `<Series>`. Render `s{S}e{E}-episode` to ship that episode as one MP4 (audio laid down in post against this). As new variations are authored, import them and insert into the `clips` array in slot order — `EPISODE_E_DURATION` auto-grows.
 
 ## Common commands
 
