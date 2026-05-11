@@ -1,5 +1,10 @@
 import React from "react";
-import { Series } from "remotion";
+import { Audio, Series, staticFile } from "remotion";
+
+// Background music. Tune the volume down once narration is layered in post —
+// 0.6 is a sensible starting point for a music-only mix.
+const MUSIC_FILE = "music/s0e1.mp3";
+const MUSIC_VOLUME = 0.6;
 import {
 	AddMinus3Plus8,
 	ADD_MINUS3_PLUS8_DURATION,
@@ -56,13 +61,16 @@ const clips: EpisodeClip[] = [
 ];
 
 export const Episode1: React.FC = () => (
-	<Series>
-		{clips.map(({ component: Clip, durationInFrames }, i) => (
-			<Series.Sequence key={i} durationInFrames={durationInFrames}>
-				<Clip />
-			</Series.Sequence>
-		))}
-	</Series>
+	<>
+		<Audio src={staticFile(MUSIC_FILE)} volume={MUSIC_VOLUME} />
+		<Series>
+			{clips.map(({ component: Clip, durationInFrames }, i) => (
+				<Series.Sequence key={i} durationInFrames={durationInFrames}>
+					<Clip />
+				</Series.Sequence>
+			))}
+		</Series>
+	</>
 );
 
 export const EPISODE_1_DURATION = clips.reduce(
