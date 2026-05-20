@@ -1,5 +1,8 @@
 import "./index.css";
-import { Composition, Folder } from "remotion";
+import { Composition, Folder, Still } from "remotion";
+import { S0E0Thumbnail } from "./thumbnails/s0e0-thumbnail";
+import { S0E1Thumbnail } from "./thumbnails/s0e1-thumbnail";
+import { S0E2Thumbnail } from "./thumbnails/s0e2-thumbnail";
 
 // ── Episode 0 — Seek target ────────────────────────────────────────────
 import { SeekMinus7, SEEK_MINUS_7_DURATION } from "./episodes/s0e0-seek-target/v0.0.1-seek-minus7";
@@ -41,6 +44,12 @@ const COMMON = { fps: 30, width: 1920, height: 1080 } as const;
 
 export const RemotionRoot: React.FC = () => {
   return (
+    <>
+    <Folder name="thumbnails">
+      <Still id="s0e0-thumbnail" component={S0E0Thumbnail} width={1280} height={720} />
+      <Still id="s0e1-thumbnail" component={S0E1Thumbnail} width={1280} height={720} />
+      <Still id="s0e2-thumbnail" component={S0E2Thumbnail} width={1280} height={720} />
+    </Folder>
     <Folder name="series-0">
       <Folder name="e0-seek-target">
         <Composition id="s0e0-episode" component={Episode0} {...COMMON} durationInFrames={EPISODE_0_DURATION} />
@@ -79,5 +88,6 @@ export const RemotionRoot: React.FC = () => {
         <Composition id="s0e2-v009-triple-minus33-plus44-minus19" component={TripleMinus33Plus44Minus19} {...COMMON} durationInFrames={TRIPLE_MINUS33_PLUS44_MINUS19_DURATION} />
       </Folder>
     </Folder>
+    </>
   );
 };
